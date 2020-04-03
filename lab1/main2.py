@@ -1,4 +1,3 @@
-import fcann2
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -24,7 +23,7 @@ if __name__ == "__main__":
     graph_surface(fcann2_decfun(w, b), rect, offset=0.5)
 
 
-    print(fcann2_classify(X, w, b))
+    #print(fcann2_classify(X, w, b))
     # graph the data points
     graph_data(X, Y_, np.argmax(fcann2_classify(X, w, b), axis=1), special=[])
 

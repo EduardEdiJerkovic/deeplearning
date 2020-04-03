@@ -1,22 +1,33 @@
 import torch.nn as nn
 import torch
 
-class PTLogreg(nn.Module):
-    def __init__(self, D, C):
+
+class PTDeep(nn.Module):
+    def __init__(self, D, F):
         """Arguments:
            - D: dimensions of each datapoint
            - C: number of classes
         """
-        super(PTLogreg, self).__init__()
-        self.W = torch.nn.Parameter(torch.zeros(D, C))
-        self.b = torch.nn.Parameter(torch.zeros(C))
+        super(PTDeep, self).__init__()
+        learn_args = []
+        bias_args = []
+        for i in range(len(D) - 1):
+            learn_args.append(nn.Parameter(nn.Parameter(torch.zeros(D[i], D[i+1]))))
+            bias_args.append(nn.Parameter(nn.Parameter(torch.zeros(D[i+1]))))
+
+        self.W = nn.ParameterList(learn_args)
+        self.b = nn.ParameterList(bias_args)
+        self.F = F
 
         # inicijalizirati parametre (koristite nn.Parameter):
         # imena mogu biti self.W, self.b
         # ...
 
     def forward(self, X):
-        return nn.functional.softmax(torch.mm(X, self.W) + self.b)
+        data = X
+        for i in range(len(self.W)-1):
+            data = self.F(torch.mm(data, self.W[i]) + self.b[i])
+        return nn.functional.softmax(torch.mm(data, self.W[-1]) + self.b[-1])
 
         # unaprijedni prolaz modela: izračunati vjerojatnosti
         #   koristiti: torch.mm, torch.softmax
@@ -28,6 +39,16 @@ class PTLogreg(nn.Module):
         # formulacija gubitka
         #   koristiti: torch.log, torch.mean, torch.sum
         # ...
+
+    def count_params(self):
+        count = 0
+        for i in range(len(self.W)):
+            print("W" + str(i) + ":", str(self.W[i].shape))
+            print("W" + str(i) + ":", str(self.b[i].shape))
+
+            count += self.W[i].shape[0] * self.W[i].shape[1] + len(self.b[i])
+
+        print("Number of all parameters:", count)
 
 
 def train(model, X, Yoh_, param_niter, param_delta):
@@ -49,7 +70,7 @@ def train(model, X, Yoh_, param_niter, param_delta):
         loss.backward()
         optim.step()
 
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print("Iteration:", i, "Loss:", loss.item())
 
     # inicijalizacija optimizatora
@@ -70,3 +91,4 @@ def evaluation(model, X):
     # ulaz je potrebno pretvoriti u torch.Tensor
     # izlaze je potrebno pretvoriti u numpy.array
     # koristite torch.Tensor.detach() i torch.Tensor.numpy()
+
